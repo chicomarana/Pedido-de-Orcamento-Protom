@@ -471,7 +471,10 @@
         if(t==='PF') m += `*CPF:* ${document.getElementById('cli_cpf').value}\n`;
         else m += `*CNPJ:* ${document.getElementById('cli_cnpj').value}\n*RAZÃO:* ${document.getElementById('cli_razao').value.toUpperCase()}\n*CPF REP.:* ${document.getElementById('cli_cpf_rep').value}\n`;
         m += `*CEP:* ${document.getElementById('cli_cep').value}\n*ENDEREÇO:* ${document.getElementById('cli_end').value.toUpperCase()}, Nº ${document.getElementById('cli_num').value}\n*CIDADE:* ${document.getElementById('cli_cid').value.toUpperCase()}\n*CONTATO:* ${document.getElementById('cli_tel').value}\n*E-MAIL:* ${document.getElementById('cli_mail').value.toLowerCase()}\n\n`;
-        m += `*3.1 PRODUTOR:* ${document.getElementById('p_nome').value || '---'}\n*TEL:* ${document.getElementById('p_tel').value || '---'}\n\n`;
+        
+        // AQUI FOI CORRIGIDO O BLOCO DO PRODUTOR PARA INCLUIR O E-MAIL
+        m += `*3.1 PRODUTOR (OPCIONAL)*\n*NOME:* ${document.getElementById('p_nome').value || '---'}\n*E-MAIL:* ${document.getElementById('p_mail').value.toLowerCase() || '---'}\n*TEL:* ${document.getElementById('p_tel').value || '---'}\n\n`;
+        
         m += `*4. PAGAMENTO:* ${document.getElementById('pagamento').value.toUpperCase()}\n*LOGÍSTICA:* ${document.getElementById('logistica').value || 'NÃO INFORMADA'}`;
 
         // DISPARO DO EMAILJS
