@@ -444,32 +444,49 @@
     }
 
     function finalizar() {
-        const f = document.getElementById('pagamento');
-        if(!f.value) { f.classList.add('invalid'); return; }
-        
-        const mods = [];
-        ['mod_formato','mod_sonorizacao','mod_trios'].forEach(n => {
-            const opt = document.querySelector(`input[name="${n}"]:checked`);
-            if(opt) mods.push(opt.value.toUpperCase());
-        });
+    const f = document.getElementById('pagamento');
+    if(!f.value) { f.classList.add('invalid'); return; }
+    
+    const mods = [];
+    ['mod_formato','mod_sonorizacao','mod_trios'].forEach(n => {
+        const opt = document.querySelector(`input[name="${n}"]:checked`);
+        if(opt) mods.push(opt.value.toUpperCase());
+    });
 
-        const t = document.getElementById('cli_tipo').value;
-        let dur = document.getElementById('duracao').value;
-        if(dur==='Periodo') dur = `DE ${document.getElementById('per_inicio').value} ATÉ ${document.getElementById('per_fim').value}`;
+    const t = document.getElementById('cli_tipo').value;
+    let dur = document.getElementById('duracao').value;
+    if(dur==='Periodo') dur = `DE ${document.getElementById('per_inicio').value} ATÉ ${document.getElementById('per_fim').value}`;
 
-        let m = `*PEDIDO DE ORÇAMENTO PROTOM*\n\n`;
-        m += `*1. PRODUTO:* ${document.getElementById('produto').value.toUpperCase()}\n*MODALIDADES:* ${mods.join(', ')}\n*DURAÇÃO:* ${dur.toUpperCase()}\n\n`;
-        m += `*2. EVENTO:* ${document.getElementById('ev_nome').value}\n*DATA:* ${document.getElementById('ev_data').value}\n*LOCAL:* ${document.getElementById('ev_local').value}, Nº ${document.getElementById('ev_num').value} ${document.getElementById('ev_comp').value}, ${document.getElementById('ev_cidade').value}\n*CEP DO EVENTO:* ${document.getElementById('ev_cep').value}\n*INÍCIO:* ${document.getElementById('h_evento').value} | *SHOW:* ${document.getElementById('h_show').value} | *FIM:* ${document.getElementById('h_fim').value}\n\n`;
-        m += `*3. CONTRATANTE:* ${document.getElementById('cli_nome').value}\n*TIPO:* ${t==='PF'?'PESSOA FÍSICA':'PESSOA JURÍDICA'}\n`;
-        if(t==='PF') m += `*CPF:* ${document.getElementById('cli_cpf').value}\n`;
-        else m += `*CNPJ:* ${document.getElementById('cli_cnpj').value}\n*RAZÃO:* ${document.getElementById('cli_razao').value}\n*CPF REP.:* ${document.getElementById('cli_cpf_rep').value}\n`;
-        m += `*CEP:* ${document.getElementById('cli_cep').value}\n*ENDEREÇO:* ${document.getElementById('cli_end').value}, Nº ${document.getElementById('cli_num').value}\n*CIDADE:* ${document.getElementById('cli_cid').value}\n*CONTATO:* ${document.getElementById('cli_tel').value}\n*E-MAIL:* ${document.getElementById('cli_mail').value}\n\n`;
-        m += `*3.1 PRODUTOR (OPCIONAL)*\n*NOME:* ${document.getElementById('p_nome').value || '---'}\n*E-MAIL:* ${document.getElementById('p_mail').value || '---'}\n*TEL:* ${document.getElementById('p_tel').value || '---'}\n\n`;
-        m += `*4. PAGAMENTO:* ${document.getElementById('pagamento').value.toUpperCase()}\n*LOGÍSTICA:* ${document.getElementById('logistica').value || 'NÃO INFORMADO'}${document.getElementById('log_info').value?' - '+document.getElementById('log_info').value:''}`;
+    // MONTAGEM DA MENSAGEM PADRÃO (IGUAL AO WHATSAPP)
+    let m = `*PEDIDO DE ORÇAMENTO PROTOM*\n\n`;
+    m += `*1. PRODUTO:* ${document.getElementById('produto').value.toUpperCase()}\n*MODALIDADES:* ${mods.join(', ')}\n*DURAÇÃO:* ${dur.toUpperCase()}\n\n`;
+    m += `*2. EVENTO:* ${document.getElementById('ev_nome').value.toUpperCase()}\n*DATA:* ${document.getElementById('ev_data').value}\n*LOCAL:* ${document.getElementById('ev_local').value.toUpperCase()}, Nº ${document.getElementById('ev_num').value.toUpperCase()} ${document.getElementById('ev_comp').value.toUpperCase()}, ${document.getElementById('ev_cidade').value.toUpperCase()}\n*CEP:* ${document.getElementById('ev_cep').value}\n*INÍCIO:* ${document.getElementById('h_evento').value} | *SHOW:* ${document.getElementById('h_show').value} | *FIM:* ${document.getElementById('h_fim').value}\n\n`;
+    m += `*3. CONTRATANTE:* ${document.getElementById('cli_nome').value.toUpperCase()}\n*TIPO:* ${t==='PF'?'PESSOA FÍSICA':'PESSOA JURÍDICA'}\n`;
+    if(t==='PF') m += `*CPF:* ${document.getElementById('cli_cpf').value}\n`;
+    else m += `*CNPJ:* ${document.getElementById('cli_cnpj').value}\n*RAZÃO:* ${document.getElementById('cli_razao').value.toUpperCase()}\n*CPF REP.:* ${document.getElementById('cli_cpf_rep').value}\n`;
+    m += `*CEP:* ${document.getElementById('cli_cep').value}\n*ENDEREÇO:* ${document.getElementById('cli_end').value.toUpperCase()}\n*CIDADE:* ${document.getElementById('cli_cid').value.toUpperCase()}\n*CONTATO:* ${document.getElementById('cli_tel').value}\n*E-MAIL:* ${document.getElementById('cli_mail').value.toLowerCase()}\n\n`;
+    m += `*3.1 PRODUTOR:* ${document.getElementById('p_nome').value || '---'}\n*TEL:* ${document.getElementById('p_tel').value || '---'}\n\n`;
+    m += `*4. PAGAMENTO:* ${document.getElementById('pagamento').value.toUpperCase()}\n*LOGÍSTICA:* ${document.getElementById('logistica').value || 'NÃO INFORMADA'}`;
 
-        alert("Mensagem enviada. Confira a cópia no seu e-mail.");
+    // DISPARO DO EMAILJS
+    const serviceID = "SEU_SERVICE_ID";
+    const templateID = "SEU_TEMPLATE_ID";
+    const publicKey = "SUA_PUBLIC_KEY";
+
+    emailjs.send(serviceID, templateID, {
+        mensagem_completa: m.replace(/\*/g, ''), // Remove os asteriscos do WhatsApp para o e-mail ficar limpo
+        cli_nome: document.getElementById('cli_nome').value.toUpperCase(),
+        reply_to: document.getElementById('cli_mail').value.toLowerCase()
+    }, publicKey)
+    .then(() => {
+        alert("Orçamento enviado com sucesso para seu e-mail e WhatsApp!");
         window.open(`https://wa.me/5571999660529?text=${encodeURIComponent(m)}`,'_blank');
-    }
+    })
+    .catch((err) => {
+        alert("Erro ao enviar e-mail, mas vamos abrir o WhatsApp!");
+        window.open(`https://wa.me/5571999660529?text=${encodeURIComponent(m)}`,'_blank');
+    });
+}
 </script>
 </body>
 </html>	
