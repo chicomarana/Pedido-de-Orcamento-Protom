@@ -470,27 +470,66 @@
         let dur = document.getElementById('duracao').value;
         if(dur==='Periodo') dur = `DE ${document.getElementById('per_inicio').value} ATÉ ${document.getElementById('per_fim').value}`;
 
-        // MONTAGEM DA MENSAGEM PADRÃO (IGUAL AO WHATSAPP)
-        let m = `*PEDIDO DE ORÇAMENTO PROTOM*\n\n`;
-        m += `*1. PRODUTO:* ${document.getElementById('produto').value.toUpperCase()}\n*MODALIDADES:*\n${modText}*DURAÇÃO:* ${dur.toUpperCase()}\n\n`;
-        m += `*2. EVENTO:* ${document.getElementById('ev_nome').value.toUpperCase()}\n*DATA:* ${document.getElementById('ev_data').value}\n*LOCAL:* ${document.getElementById('ev_local').value.toUpperCase()}, Nº ${document.getElementById('ev_num').value.toUpperCase()} ${document.getElementById('ev_comp').value.toUpperCase()}, ${document.getElementById('ev_cidade').value.toUpperCase()}\n*CEP:* ${document.getElementById('ev_cep').value}\n*INÍCIO:* ${document.getElementById('h_evento').value} | *SHOW:* ${document.getElementById('h_show').value} | *FIM:* ${document.getElementById('h_fim').value}\n\n`;
-        m += `*3. CONTRATANTE:* ${document.getElementById('cli_nome').value.toUpperCase()}\n*TIPO:* ${t==='PF'?'PESSOA FÍSICA':'PESSOA JURÍDICA'}\n`;
-        
-        if(t==='PF') m += `*CPF:* ${document.getElementById('cli_cpf').value}\n`;
-        else m += `*CNPJ:* ${document.getElementById('cli_cnpj').value}\n*RAZÃO:* ${document.getElementById('cli_razao').value.toUpperCase()}\n*CPF REP.:* ${document.getElementById('cli_cpf_rep').value}\n`;
-        
-        const cli_comp_val = document.getElementById('cli_comp').value.trim();
-        const cli_comp_text = cli_comp_val ? `\n*COMPLEMENTO:* ${cli_comp_val.toUpperCase()}` : `\n*COMPLEMENTO:* ---`;
+        // TRATAMENTO DE COMPLEMENTOS VAZIOS PARA NÃO FICAREM EM BRANCO
+        let compEv = document.getElementById('ev_comp').value.trim();
+        compEv = compEv ? compEv.toUpperCase() : "---";
 
-        m += `*CEP:* ${document.getElementById('cli_cep').value}\n*ENDEREÇO:* ${document.getElementById('cli_end').value.toUpperCase()}, Nº ${document.getElementById('cli_num').value}${cli_comp_text}\n*CIDADE:* ${document.getElementById('cli_cid').value.toUpperCase()}\n*CONTATO:* ${document.getElementById('cli_tel').value}\n*E-MAIL:* ${document.getElementById('cli_mail').value.toLowerCase()}\n\n`;
+        let compCli = document.getElementById('cli_comp').value.trim();
+        compCli = compCli ? compCli.toUpperCase() : "---";
+
+        let pMail = document.getElementById('p_mail').value.trim();
+        pMail = pMail ? pMail.toLowerCase() : "---";
+
+        let pNome = document.getElementById('p_nome').value.trim();
+        pNome = pNome ? pNome.toUpperCase() : "---";
+
+        let pTel = document.getElementById('p_tel').value.trim();
+        pTel = pTel ? pTel : "---";
+
+        let logDetail = document.getElementById('logistica').value.toUpperCase();
+        if (!logDetail) logDetail = "NÃO INFORMADA";
+
+        // MONTAGEM DA MENSAGEM PADRÃO LINHA POR LINHA PARA EVITAR ERROS DE FORMATAÇÃO
+        let m = `*PEDIDO DE ORÇAMENTO PROTOM*\n\n`;
         
-        // TRATAMENTO SEGURO DO E-MAIL DO PRODUTOR
-        const p_mail_val = document.getElementById('p_mail').value.trim();
-        const p_mail_text = p_mail_val ? p_mail_val.toLowerCase() : '---';
+        m += `*1. PRODUTO:* ${document.getElementById('produto').value.toUpperCase()}\n`;
+        m += `*MODALIDADES:*\n${modText}`;
+        m += `*DURAÇÃO:* ${dur.toUpperCase()}\n\n`;
         
-        m += `*3.1 PRODUTOR (OPCIONAL)*\n*NOME:* ${document.getElementById('p_nome').value.toUpperCase() || '---'}\n*E-MAIL:* ${p_mail_text}\n*TEL:* ${document.getElementById('p_tel').value || '---'}\n\n`;
+        m += `*2. EVENTO:* ${document.getElementById('ev_nome').value.toUpperCase()}\n`;
+        m += `*DATA:* ${document.getElementById('ev_data').value}\n`;
+        m += `*LOCAL:* ${document.getElementById('ev_local').value.toUpperCase()}, Nº ${document.getElementById('ev_num').value.toUpperCase()}\n`;
+        m += `*COMPLEMENTO (LOCAL):* ${compEv}\n`;
+        m += `*CIDADE/UF:* ${document.getElementById('ev_cidade').value.toUpperCase()}\n`;
+        m += `*CEP:* ${document.getElementById('ev_cep').value}\n`;
+        m += `*INÍCIO DO EVENTO:* ${document.getElementById('h_evento').value} | *SHOW:* ${document.getElementById('h_show').value} | *FIM:* ${document.getElementById('h_fim').value}\n\n`;
         
-        m += `*4. PAGAMENTO:* ${document.getElementById('pagamento').value.toUpperCase()}\n*LOGÍSTICA:* ${document.getElementById('logistica').value || 'NÃO INFORMADA'}`;
+        m += `*3. CONTRATANTE:* ${document.getElementById('cli_nome').value.toUpperCase()}\n`;
+        m += `*TIPO:* ${t==='PF'?'PESSOA FÍSICA':'PESSOA JURÍDICA'}\n`;
+        
+        if(t==='PF') {
+            m += `*CPF:* ${document.getElementById('cli_cpf').value}\n`;
+        } else {
+            m += `*CNPJ:* ${document.getElementById('cli_cnpj').value}\n`;
+            m += `*RAZÃO SOCIAL:* ${document.getElementById('cli_razao').value.toUpperCase()}\n`;
+            m += `*CPF REP.:* ${document.getElementById('cli_cpf_rep').value}\n`;
+        }
+        
+        m += `*ENDEREÇO:* ${document.getElementById('cli_end').value.toUpperCase()}, Nº ${document.getElementById('cli_num').value}\n`;
+        m += `*COMPLEMENTO (CONTRATANTE):* ${compCli}\n`;
+        m += `*CIDADE/UF:* ${document.getElementById('cli_cid').value.toUpperCase()}\n`;
+        m += `*CEP:* ${document.getElementById('cli_cep').value}\n`;
+        m += `*CONTATO:* ${document.getElementById('cli_tel').value}\n`;
+        m += `*E-MAIL:* ${document.getElementById('cli_mail').value.toLowerCase()}\n\n`;
+        
+        m += `*3.1 PRODUTOR (OPCIONAL)*\n`;
+        m += `*NOME:* ${pNome}\n`;
+        m += `*E-MAIL:* ${pMail}\n`;
+        m += `*TEL:* ${pTel}\n\n`;
+        
+        m += `*4. PAGAMENTO E LOGÍSTICA*\n`;
+        m += `*PAGAMENTO:* ${document.getElementById('pagamento').value.toUpperCase()}\n`;
+        m += `*LOGÍSTICA:* ${logDetail}`;
 
         // DISPARO DO EMAILJS
         const serviceID = "service_ydy10jc";
