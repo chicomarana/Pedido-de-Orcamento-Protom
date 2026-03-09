@@ -475,9 +475,14 @@
         m += `*1. PRODUTO:* ${document.getElementById('produto').value.toUpperCase()}\n*MODALIDADES:*\n${modText}*DURAÇÃO:* ${dur.toUpperCase()}\n\n`;
         m += `*2. EVENTO:* ${document.getElementById('ev_nome').value.toUpperCase()}\n*DATA:* ${document.getElementById('ev_data').value}\n*LOCAL:* ${document.getElementById('ev_local').value.toUpperCase()}, Nº ${document.getElementById('ev_num').value.toUpperCase()} ${document.getElementById('ev_comp').value.toUpperCase()}, ${document.getElementById('ev_cidade').value.toUpperCase()}\n*CEP:* ${document.getElementById('ev_cep').value}\n*INÍCIO:* ${document.getElementById('h_evento').value} | *SHOW:* ${document.getElementById('h_show').value} | *FIM:* ${document.getElementById('h_fim').value}\n\n`;
         m += `*3. CONTRATANTE:* ${document.getElementById('cli_nome').value.toUpperCase()}\n*TIPO:* ${t==='PF'?'PESSOA FÍSICA':'PESSOA JURÍDICA'}\n`;
+        
         if(t==='PF') m += `*CPF:* ${document.getElementById('cli_cpf').value}\n`;
         else m += `*CNPJ:* ${document.getElementById('cli_cnpj').value}\n*RAZÃO:* ${document.getElementById('cli_razao').value.toUpperCase()}\n*CPF REP.:* ${document.getElementById('cli_cpf_rep').value}\n`;
-        m += `*CEP:* ${document.getElementById('cli_cep').value}\n*ENDEREÇO:* ${document.getElementById('cli_end').value.toUpperCase()}, Nº ${document.getElementById('cli_num').value}\n*CIDADE:* ${document.getElementById('cli_cid').value.toUpperCase()}\n*CONTATO:* ${document.getElementById('cli_tel').value}\n*E-MAIL:* ${document.getElementById('cli_mail').value.toLowerCase()}\n\n`;
+        
+        const cli_comp_val = document.getElementById('cli_comp').value.trim();
+        const cli_comp_text = cli_comp_val ? `\n*COMPLEMENTO:* ${cli_comp_val.toUpperCase()}` : `\n*COMPLEMENTO:* ---`;
+
+        m += `*CEP:* ${document.getElementById('cli_cep').value}\n*ENDEREÇO:* ${document.getElementById('cli_end').value.toUpperCase()}, Nº ${document.getElementById('cli_num').value}${cli_comp_text}\n*CIDADE:* ${document.getElementById('cli_cid').value.toUpperCase()}\n*CONTATO:* ${document.getElementById('cli_tel').value}\n*E-MAIL:* ${document.getElementById('cli_mail').value.toLowerCase()}\n\n`;
         
         // TRATAMENTO SEGURO DO E-MAIL DO PRODUTOR
         const p_mail_val = document.getElementById('p_mail').value.trim();
