@@ -70,8 +70,8 @@
                     <span class="category-label">Formato:</span>
                     <div class="multi-item"><input type="radio" name="mod_formato" value="Voz e Violão"> Voz e Violão</div>
                     <div class="multi-item"><input type="radio" name="mod_formato" value="Participação"> Participação</div>
-                    <div class="multi-item"><input type="radio" name="mod_formato" value="Versão Pocket"> Versão Pocket</div>
-                    <div class="multi-item"><input type="radio" name="mod_formato" value="Versão Banda Completa"> Versão Banda Completa</div>
+                    <div class="multi-item"><input type="radio" name="mod_formato" value="Formato Pocket"> Formato Pocket</div>
+                    <div class="multi-item"><input type="radio" name="mod_formato" value="Formato Banda Completa"> Formato Banda Completa</div>
                     
                     <span class="category-label">Sonorização:</span>
                     <div class="multi-item"><input type="radio" name="mod_sonorizacao" value="Até 100 pessoas"> Até 100 pessoas</div>
@@ -209,4 +209,303 @@
                 <div class="form-group"><label id="lbl-log">Detalhes</label><textarea id="log_info" rows="3"></textarea></div>
             </div>
             <div class="form-group">
-                <label>Condição de Pagamento <span class="req">*</span></label
+                <label>Condição de Pagamento <span class="req">*</span></label>
+                <select id="pagamento" required>
+                    <option value="">Selecione...</option>
+                    <option value="À VISTA (PIX, TRANSF OU CARTÃO)">À VISTA (PIX, TRANSF OU CARTÃO)</option>
+                    <option value="2X (PIX PROGRAMADO OU CARTÃO)">2X (PIX PROGRAMADO OU CARTÃO)</option>
+                    <option value="3X (CARTÃO)">3X (CARTÃO)</option>
+                    <option value="4X (CARTÃO)">4X (CARTÃO)</option>
+                </select>
+                <div class="error-text">(campo obrigatório)</div>
+            </div>
+            
+            <div class="grid-2">
+                <button type="button" class="btn btn-sec" onclick="prevStep(4, 3)">ANTERIOR</button>
+                <button type="button" class="btn" onclick="finalizar()">ENVIAR PEDIDO DE ORÇAMENTO</button>
+            </div>
+            <button type="button" class="btn btn-novo" onclick="novoPedido()">NOVO PEDIDO</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // --- FUNÇÕES DE VALIDAÇÃO MATEMÁTICA ---
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/[^\d]+/g,'');
+        if(cpf === '' || cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+        let add = 0;
+        for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+        let rev = 11 - (add % 11);
+        if (rev === 10 || rev === 11) rev = 0;
+        if (rev !== parseInt(cpf.charAt(9))) return false;
+        add = 0;
+        for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+        rev = 11 - (add % 11);
+        if (rev === 10 || rev === 11) rev = 0;
+        if (rev !== parseInt(cpf.charAt(10))) return false;
+        return true;
+    }
+
+    function validarCNPJ(cnpj) {
+        cnpj = cnpj.replace(/[^\d]+/g,'');
+        if(cnpj === '' || cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+        let tam = cnpj.length - 2; let num = cnpj.substring(0,tam); let dig = cnpj.substring(tam);
+        let soma = 0; let pos = tam - 7;
+        for (let i = tam; i >= 1; i--) { soma += num.charAt(tam - i) * pos--; if (pos < 2) pos = 9; }
+        let res = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (res != dig.charAt(0)) return false;
+        tam = tam + 1; num = cnpj.substring(0,tam); soma = 0; pos = tam - 7;
+        for (let i = tam; i >= 1; i--) { soma += num.charAt(tam - i) * pos--; if (pos < 2) pos = 9; }
+        res = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (res != dig.charAt(1)) return false;
+        return true;
+    }
+
+    // --- LÓGICA DE AVISO IMEDIATO ---
+    function triggerValidation(input, type) {
+        const val = input.value.replace(/\D/g, '');
+        const err = input.parentElement.querySelector('.error-text');
+        let isValid = true;
+
+        if (type === 'cpf' && val.length === 11) isValid = validarCPF(val);
+        if (type === 'cnpj' && val.length === 14) isValid = validarCNPJ(val);
+
+        if (!isValid) {
+            input.classList.add('invalid');
+            if (err) { err.innerText = (type === 'cpf' ? '(CPF inválido)' : '(CNPJ inválido)'); err.style.display = 'block'; }
+        } else {
+            input.classList.remove('invalid');
+            if (err) err.style.display = 'none';
+        }
+    }
+
+    // --- NAVEGAÇÃO ---
+    function prevStep(cur, prev) {
+        document.getElementById(`step${cur}`).classList.add('hidden');
+        document.getElementById(`step${prev}`).classList.remove('hidden');
+        window.scrollTo(0,0);
+    }
+    
+    function novoPedido() {
+        if(confirm("Deseja iniciar um novo pedido? Os dados atuais serão apagados.")) {
+            window.location.reload();
+        }
+    }
+
+    // --- BUSCA CNPJ ---
+    async function buscarCNPJ(input) {
+        const cnpj = input.value.replace(/\D/g,'');
+        const razaoInput = document.getElementById('cli_razao');
+        const load = document.getElementById('cnpj_loading');
+        
+        triggerValidation(input, 'cnpj');
+        if(!validarCNPJ(cnpj)) return;
+
+        load.style.display='block';
+        try {
+            const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+            const data = await res.json();
+            if(data.razao_social) {
+                razaoInput.value = data.razao_social.toUpperCase();
+                razaoInput.readOnly = true;
+                razaoInput.style.backgroundColor = '#e2e8f0';
+            }
+        } catch(e){} finally { load.style.display='none'; }
+    }
+
+    // --- CEP E ENDEREÇO ---
+    function lockFields(prefix, lock) {
+        const rua = prefix==='ev'?'ev_local':'cli_end';
+        const cid = prefix==='ev'?'ev_cidade':'cli_cid';
+        document.getElementById(rua).readOnly = lock;
+        document.getElementById(cid).readOnly = lock;
+        document.getElementById(rua).style.backgroundColor = lock?'#e2e8f0':'#fffbeb';
+        document.getElementById(cid).style.backgroundColor = lock?'#e2e8f0':'#fffbeb';
+    }
+
+    async function buscarEndereco(prefix) {
+        const cep = document.getElementById(`${prefix}_cep`).value.replace(/\D/g,'');
+        if(cep.length!==8) { lockFields(prefix, false); return; }
+        const load = document.getElementById(`${prefix}_loading`);
+        load.style.display='block';
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await res.json();
+            if(!data.erro) {
+                const rua = prefix==='ev'?'ev_local':'cli_end';
+                const cid = prefix==='ev'?'ev_cidade':'cli_cid';
+                document.getElementById(rua).value = `${data.logradouro}, ${data.bairro}`.toUpperCase();
+                document.getElementById(cid).value = `${data.localidade}-${data.uf}`.toUpperCase();
+                lockFields(prefix, true);
+            }
+        } finally { load.style.display='none'; }
+    }
+
+    async function buscarCEP(prefix) {
+        const ruaId = prefix==='ev'?'ev_local':'cli_end';
+        const cidId = prefix==='ev'?'ev_cidade':'cli_cid';
+        const ruaTxt = document.getElementById(ruaId).value;
+        const cidTxt = document.getElementById(cidId).value;
+        if(document.getElementById(`${prefix}_cep`).value.length===9 || !ruaTxt || !cidTxt) return;
+        
+        let parts = cidTxt.split(/[-/]/);
+        if(parts.length<2) return;
+        const load = document.getElementById(`${prefix}_loading`);
+        load.style.display='block'; load.innerText='Buscando CEP...';
+        try {
+            const res = await fetch(`https://viacep.com.br/ws/${parts[1].trim()}/${encodeURIComponent(parts[0].trim())}/${encodeURIComponent(ruaTxt.split(',')[0])}/json/`);
+            const data = await res.json();
+            if(data.length>0) {
+                document.getElementById(`${prefix}_cep`).value = data[0].cep;
+                lockFields(prefix, true);
+            }
+        } catch(e){} finally { load.style.display='none'; load.innerText='Buscando...'; }
+    }
+
+    // --- MÁSCARAS E EVENTOS ---
+    function setupMask(id, type) {
+        const el = document.getElementById(id); if(!el) return;
+        el.addEventListener('input', e => {
+            let v = e.target.value.replace(/\D/g,''); 
+            if(type==='cpf') v = v.substring(0,11).replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+            else if(type==='cnpj') v = v.substring(0,14).replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');
+            else if(type==='cep') v = v.substring(0,8).replace(/(\d{5})(\d)/,'$1-$2');
+            else if(type==='date') v = v.substring(0,8).replace(/(\d{2})(\d)/,'$1/$2').replace(/(\d{2})(\d)/,'$1/$2');
+            else if(type==='datetime') v = v.substring(0,12).replace(/(\d{2})(\d)/,'$1/$2').replace(/(\d{2})(\d)/,'$1/$2').replace(/(\d{4})(\d)/,'$1 $2').replace(/(\d{2})(\d)/,'$1:$2');
+            else if(type==='tel') v = v.substring(0,11).length>10 ? v.replace(/^(\d{2})(\d{5})(\d{4})/,'$1 $2-$3') : v.replace(/^(\d{2})(\d{4})(\d{4})/,'$1 $2-$3');
+            e.target.value = v;
+
+            // Validação IMEDIATA ao atingir o tamanho máximo
+            if(type==='cpf' && v.length === 14) triggerValidation(el, 'cpf');
+            if(type==='cnpj' && v.length === 18) buscarCNPJ(el);
+        });
+        el.addEventListener('blur', e => {
+            if(el.type==='email') el.value = el.value.toLowerCase();
+            else if(el.tagName!=='SELECT') el.value = el.value.toUpperCase();
+            if(type==='cpf') triggerValidation(el, 'cpf');
+            if(type==='cnpj') buscarCNPJ(el);
+        });
+    }
+
+    // --- START ---
+    const start = () => {
+        ['ev_data','per_inicio','per_fim','ev_cep','cli_cep','cli_cpf','cli_cnpj','cli_cpf_rep','cli_tel','p_tel'].forEach(id => {
+            if(id.includes('cpf')) setupMask(id, 'cpf');
+            else if(id.includes('cnpj')) setupMask(id, 'cnpj');
+            else if(id.includes('cep')) setupMask(id, 'cep');
+            else if(id.includes('data')) setupMask(id, 'date');
+            else if(id.includes('per')) setupMask(id, 'datetime');
+            else if(id.includes('tel')) setupMask(id, 'tel');
+        });
+        
+        // Garante uppercase e lowercase
+        document.querySelectorAll('input[type="text"], textarea').forEach(el => {
+            if (!el.classList.contains('mask-cpf') && !el.classList.contains('mask-cnpj') && !el.classList.contains('mask-cep')) {
+                el.addEventListener('blur', e => { el.value = el.value.toUpperCase(); });
+            }
+        });
+        document.querySelectorAll('input[type="email"]').forEach(el => {
+            el.addEventListener('blur', e => { el.value = el.value.toLowerCase(); });
+        });
+    };
+    start();
+
+    // --- LÓGICA DE FORMULÁRIO ---
+    function setCli(t) {
+        document.getElementById('cli_tipo').value = t;
+        document.getElementById('tPF').className = 'toggle-btn '+(t==='PF'?'active':'');
+        document.getElementById('tPJ').className = 'toggle-btn '+(t==='PJ'?'active':'');
+        document.getElementById('fPF').className = t==='PF'?'':'hidden';
+        document.getElementById('fPJ').className = t==='PJ'?'':'hidden';
+    }
+    function togglePeriodo() { document.getElementById('box-periodo').className = document.getElementById('duracao').value==='Periodo'?'':'hidden'; }
+    function toggleLog() { document.getElementById('box-log').className = document.getElementById('logistica').value==='SHOW COLOCADO' || !document.getElementById('logistica').value ?'hidden':''; }
+    function calcTermino() {
+        const i = document.getElementById('h_show').value; const d = document.getElementById('duracao').value;
+        if(!i || ['Periodo','Indeterminado','Diária'].includes(d)) { document.getElementById('h_fim').value = d; return; }
+        let [h, m] = i.split(':').map(Number); let [dH, dM] = d.split(':').map(Number);
+        let t = (h*60+m) + (dH*60+dM);
+        document.getElementById('h_fim').value = `${String(Math.floor(t/60)%24).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+    }
+
+    function validateStep(cur, next) {
+        const s = document.getElementById(`step${cur}`);
+        const inputs = s.querySelectorAll('[required]');
+        let ok = true;
+        inputs.forEach(i => {
+            if (i.closest('.hidden')) return;
+            const err = i.parentElement.querySelector('.error-text');
+            let invalid = !i.value.trim() || (i.type==='email' && !i.value.includes('@'));
+            
+            if(i.id === 'cli_cpf' || i.id === 'cli_cpf_rep') if(!validarCPF(i.value)) invalid = true;
+            if(i.id === 'cli_cnpj') if(!validarCNPJ(i.value)) invalid = true;
+
+            if(invalid) { i.classList.add('invalid'); if(err) err.style.display='block'; ok=false; }
+            else { i.classList.remove('invalid'); if(err) err.style.display='none'; }
+        });
+        if(cur===1 && !document.querySelector('input[name^="mod_"]:checked')) { document.getElementById('err-mod').style.display='block'; ok=false; }
+        if(ok) { s.classList.add('hidden'); document.getElementById(`step${next}`).classList.remove('hidden'); window.scrollTo(0,0); }
+        else alert("Existem campos vazios ou inválidos (ex: CPF incorreto).");
+    }
+
+    function finalizar() {
+        const f = document.getElementById('pagamento');
+        if(!f.value) { f.classList.add('invalid'); return; }
+        
+        // MONTA AS MODALIDADES COM AS CATEGORIAS
+        let modText = "";
+        const optFormato = document.querySelector('input[name="mod_formato"]:checked');
+        if(optFormato) modText += ` - *FORMATO:* ${optFormato.value.toUpperCase()}\n`;
+        
+        const optSom = document.querySelector('input[name="mod_sonorizacao"]:checked');
+        if(optSom) modText += ` - *SONORIZAÇÃO:* ${optSom.value.toUpperCase()}\n`;
+        
+        const optTrio = document.querySelector('input[name="mod_trios"]:checked');
+        if(optTrio) modText += ` - *TRIOS:* ${optTrio.value.toUpperCase()}\n`;
+        
+        if(modText === "") modText = " - *NENHUMA SELECIONADA*\n";
+
+        const t = document.getElementById('cli_tipo').value;
+        let dur = document.getElementById('duracao').value;
+        if(dur==='Periodo') dur = `DE ${document.getElementById('per_inicio').value} ATÉ ${document.getElementById('per_fim').value}`;
+
+        // MONTAGEM DA MENSAGEM PADRÃO (IGUAL AO WHATSAPP)
+        let m = `*PEDIDO DE ORÇAMENTO PROTOM*\n\n`;
+        m += `*1. PRODUTO:* ${document.getElementById('produto').value.toUpperCase()}\n*MODALIDADES:*\n${modText}*DURAÇÃO:* ${dur.toUpperCase()}\n\n`;
+        m += `*2. EVENTO:* ${document.getElementById('ev_nome').value.toUpperCase()}\n*DATA:* ${document.getElementById('ev_data').value}\n*LOCAL:* ${document.getElementById('ev_local').value.toUpperCase()}, Nº ${document.getElementById('ev_num').value.toUpperCase()} ${document.getElementById('ev_comp').value.toUpperCase()}, ${document.getElementById('ev_cidade').value.toUpperCase()}\n*CEP:* ${document.getElementById('ev_cep').value}\n*INÍCIO:* ${document.getElementById('h_evento').value} | *SHOW:* ${document.getElementById('h_show').value} | *FIM:* ${document.getElementById('h_fim').value}\n\n`;
+        m += `*3. CONTRATANTE:* ${document.getElementById('cli_nome').value.toUpperCase()}\n*TIPO:* ${t==='PF'?'PESSOA FÍSICA':'PESSOA JURÍDICA'}\n`;
+        if(t==='PF') m += `*CPF:* ${document.getElementById('cli_cpf').value}\n`;
+        else m += `*CNPJ:* ${document.getElementById('cli_cnpj').value}\n*RAZÃO:* ${document.getElementById('cli_razao').value.toUpperCase()}\n*CPF REP.:* ${document.getElementById('cli_cpf_rep').value}\n`;
+        m += `*CEP:* ${document.getElementById('cli_cep').value}\n*ENDEREÇO:* ${document.getElementById('cli_end').value.toUpperCase()}, Nº ${document.getElementById('cli_num').value}\n*CIDADE:* ${document.getElementById('cli_cid').value.toUpperCase()}\n*CONTATO:* ${document.getElementById('cli_tel').value}\n*E-MAIL:* ${document.getElementById('cli_mail').value.toLowerCase()}\n\n`;
+        
+        // TRATAMENTO SEGURO DO E-MAIL DO PRODUTOR
+        const p_mail_val = document.getElementById('p_mail').value.trim();
+        const p_mail_text = p_mail_val ? p_mail_val.toLowerCase() : '---';
+        
+        m += `*3.1 PRODUTOR (OPCIONAL)*\n*NOME:* ${document.getElementById('p_nome').value.toUpperCase() || '---'}\n*E-MAIL:* ${p_mail_text}\n*TEL:* ${document.getElementById('p_tel').value || '---'}\n\n`;
+        
+        m += `*4. PAGAMENTO:* ${document.getElementById('pagamento').value.toUpperCase()}\n*LOGÍSTICA:* ${document.getElementById('logistica').value || 'NÃO INFORMADA'}`;
+
+        // DISPARO DO EMAILJS
+        const serviceID = "service_ydy10jc";
+        const templateID = "template_wztm6sp";
+        const publicKey = "mSSg-wOW2y5d-ruxd";
+
+        emailjs.send(serviceID, templateID, {
+            mensagem_completa: m.replace(/\*/g, ''), // Remove os asteriscos do WhatsApp para o e-mail ficar limpo
+            cli_nome: document.getElementById('cli_nome').value.toUpperCase(),
+            reply_to: document.getElementById('cli_mail').value.toLowerCase()
+        }, publicKey)
+        .then(() => {
+            alert("Orçamento enviado com sucesso para seu e-mail e WhatsApp!");
+            window.open(`https://wa.me/5571999660529?text=${encodeURIComponent(m)}`,'_blank');
+        })
+        .catch((err) => {
+            alert("Erro ao enviar e-mail, mas vamos abrir o WhatsApp!");
+            window.open(`https://wa.me/5571999660529?text=${encodeURIComponent(m)}`,'_blank');
+        });
+    }
+</script>
+</body>
+</html>
